@@ -1,0 +1,53 @@
+name: 每日自動更新資料
+
+# 設定觸發條件
+on:
+  schedule:
+    # 每天 UTC 時間 20:00 執行 (台灣時間凌晨 04:00)
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 允許手動按按鈕觸發測試
+
+# 設定權限 (允許機器人修改程式碼並上傳)
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. 把程式碼抓下來
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    # 2. 設定 Python 環境
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    # 3. 安裝套件
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # 如果你有用到 crawl4ai，需要安裝瀏覽器 (沒用到可刪除下面這行)
+        playwright install chromium
+
+    # 4. 執行爬蟲程式 (⚠️請確認這裡的檔名是你真正要跑的那支程式!)
+    - name: Run AI Extractor
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: python ai_micro.py
+
+    # 5. 檢查有沒有新資料，如果有就 Commit 並 Push
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        # 檢查 structured_data.json 是否有變動
+        git add structured_data.json
+        
+        # 如果有變動才 Commit，沒變動就跳過 (避免錯誤)
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: data refreshed by GitHub Actions" && git push)
