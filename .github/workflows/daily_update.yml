@@ -32,7 +32,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         # 如果你有用到 crawl4ai，需要安裝瀏覽器 (沒用到可刪除下面這行)
-        playwright install chromium
 
     # 4. 執行爬蟲程式 (⚠️請確認這裡的檔名是你真正要跑的那支程式!)
     - name: Run AI Extractor
